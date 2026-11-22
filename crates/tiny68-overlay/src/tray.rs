@@ -8,6 +8,10 @@ const WM_TRAY_CALLBACK: u32 = WM_APP + 68;
 pub const ID_TRAY_SETTINGS: usize = 1001;
 pub const ID_TRAY_ADD_MOCHI: usize = 1002;
 pub const ID_TRAY_ADD_KIKO: usize = 1003;
+pub const ID_TRAY_ADD_SHINOBI: usize = 1020;
+pub const ID_TRAY_ADD_SAMURAI: usize = 1021;
+pub const ID_TRAY_ADD_SCHOOLGIRL: usize = 1022;
+pub const ID_TRAY_ADD_FIGHTER: usize = 1023;
 pub const ID_TRAY_PAUSE_RESUME: usize = 1004;
 pub const ID_TRAY_HIDE_SHOW: usize = 1005;
 pub const ID_TRAY_MODE_ECO: usize = 1006;
@@ -56,6 +60,10 @@ pub enum TrayEvent {
     OpenSettings,
     AddMochi,
     AddKiko,
+    AddShinobi,
+    AddSamurai,
+    AddSchoolgirl,
+    AddFighter,
     TogglePause,
     ToggleHide,
     SetModeEco,
@@ -116,8 +124,42 @@ impl TrayIcon {
             let _ = AppendMenuW(hmenu, MF_SEPARATOR, 0, PCWSTR::null());
 
             let add_submenu = CreatePopupMenu().ok()?;
-            let _ = AppendMenuW(add_submenu, MF_STRING, ID_TRAY_ADD_MOCHI, w!("Add Mochi"));
-            let _ = AppendMenuW(add_submenu, MF_STRING, ID_TRAY_ADD_KIKO, w!("Add Kiko"));
+            let _ = AppendMenuW(
+                add_submenu,
+                MF_STRING,
+                ID_TRAY_ADD_MOCHI,
+                w!("Add Mochi (Chibi)"),
+            );
+            let _ = AppendMenuW(
+                add_submenu,
+                MF_STRING,
+                ID_TRAY_ADD_KIKO,
+                w!("Add Kiko (Chibi)"),
+            );
+            let _ = AppendMenuW(
+                add_submenu,
+                MF_STRING,
+                ID_TRAY_ADD_SHINOBI,
+                w!("Add Shinobi (Ninja)"),
+            );
+            let _ = AppendMenuW(
+                add_submenu,
+                MF_STRING,
+                ID_TRAY_ADD_SAMURAI,
+                w!("Add Samurai"),
+            );
+            let _ = AppendMenuW(
+                add_submenu,
+                MF_STRING,
+                ID_TRAY_ADD_SCHOOLGIRL,
+                w!("Add Aoi (Schoolgirl)"),
+            );
+            let _ = AppendMenuW(
+                add_submenu,
+                MF_STRING,
+                ID_TRAY_ADD_FIGHTER,
+                w!("Add Fighter"),
+            );
             let _ = AppendMenuW(hmenu, MF_POPUP, add_submenu.0 as usize, w!("Add Character"));
 
             let pause_text = if is_paused {
@@ -187,6 +229,10 @@ impl TrayIcon {
                 ID_TRAY_SETTINGS => Some(TrayEvent::OpenSettings),
                 ID_TRAY_ADD_MOCHI => Some(TrayEvent::AddMochi),
                 ID_TRAY_ADD_KIKO => Some(TrayEvent::AddKiko),
+                ID_TRAY_ADD_SHINOBI => Some(TrayEvent::AddShinobi),
+                ID_TRAY_ADD_SAMURAI => Some(TrayEvent::AddSamurai),
+                ID_TRAY_ADD_SCHOOLGIRL => Some(TrayEvent::AddSchoolgirl),
+                ID_TRAY_ADD_FIGHTER => Some(TrayEvent::AddFighter),
                 ID_TRAY_PAUSE_RESUME => Some(TrayEvent::TogglePause),
                 ID_TRAY_HIDE_SHOW => Some(TrayEvent::ToggleHide),
                 ID_TRAY_MODE_ECO => Some(TrayEvent::SetModeEco),

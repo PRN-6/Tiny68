@@ -23,6 +23,10 @@ const ID_BTN_RESET: usize = 202;
 
 const ID_BTN_ADD_MOCHI: usize = 301;
 const ID_BTN_ADD_KIKO: usize = 302;
+const ID_BTN_ADD_SHINOBI: usize = 304;
+const ID_BTN_ADD_SAMURAI: usize = 305;
+const ID_BTN_ADD_AOI: usize = 306;
+const ID_BTN_ADD_FIGHTER: usize = 307;
 const ID_BTN_REMOVE_LAST: usize = 303;
 
 const ID_BTN_PERF_ECO: usize = 401;
@@ -183,34 +187,75 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         );
 
         // Create Tab-specific interactive controls
-        // Characters Tab buttons
+        // Characters Tab buttons (Row 1 & Row 2)
         create_btn(
             hwnd,
-            "+ Add Mochi",
-            160,
-            370,
-            110,
-            32,
+            "+ Mochi",
+            170,
+            335,
+            90,
+            30,
             ID_BTN_ADD_MOCHI,
             instance.into(),
         );
         create_btn(
             hwnd,
-            "+ Add Kiko",
-            280,
-            370,
-            110,
-            32,
+            "+ Kiko",
+            270,
+            335,
+            90,
+            30,
             ID_BTN_ADD_KIKO,
             instance.into(),
         );
         create_btn(
             hwnd,
-            "- Remove Last",
-            400,
+            "+ Shinobi",
             370,
-            110,
-            32,
+            335,
+            90,
+            30,
+            ID_BTN_ADD_SHINOBI,
+            instance.into(),
+        );
+        create_btn(
+            hwnd,
+            "+ Samurai",
+            470,
+            335,
+            90,
+            30,
+            ID_BTN_ADD_SAMURAI,
+            instance.into(),
+        );
+        create_btn(
+            hwnd,
+            "+ Aoi",
+            570,
+            335,
+            80,
+            30,
+            ID_BTN_ADD_AOI,
+            instance.into(),
+        );
+
+        create_btn(
+            hwnd,
+            "+ Fighter",
+            170,
+            372,
+            90,
+            30,
+            ID_BTN_ADD_FIGHTER,
+            instance.into(),
+        );
+        create_btn(
+            hwnd,
+            "- Remove Last",
+            270,
+            372,
+            120,
+            30,
             ID_BTN_REMOVE_LAST,
             instance.into(),
         );
@@ -289,6 +334,7 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             instance.into(),
         );
 
+        update_tab_visibility(hwnd, 0);
         let _ = ShowWindow(hwnd, SW_SHOW);
         let _ = UpdateWindow(hwnd);
 
@@ -348,11 +394,26 @@ unsafe extern "system" fn settings_wnd_proc(
         WM_COMMAND => {
             let cmd_id = wparam.0 & 0xFFFF;
             match cmd_id {
-                ID_TAB_HOME => CURRENT_TAB.store(0, Ordering::Relaxed),
-                ID_TAB_CHARS => CURRENT_TAB.store(1, Ordering::Relaxed),
-                ID_TAB_PERF => CURRENT_TAB.store(2, Ordering::Relaxed),
-                ID_TAB_DESKTOP => CURRENT_TAB.store(3, Ordering::Relaxed),
-                ID_TAB_ABOUT => CURRENT_TAB.store(4, Ordering::Relaxed),
+                ID_TAB_HOME => {
+                    CURRENT_TAB.store(0, Ordering::Relaxed);
+                    update_tab_visibility(hwnd, 0);
+                }
+                ID_TAB_CHARS => {
+                    CURRENT_TAB.store(1, Ordering::Relaxed);
+                    update_tab_visibility(hwnd, 1);
+                }
+                ID_TAB_PERF => {
+                    CURRENT_TAB.store(2, Ordering::Relaxed);
+                    update_tab_visibility(hwnd, 2);
+                }
+                ID_TAB_DESKTOP => {
+                    CURRENT_TAB.store(3, Ordering::Relaxed);
+                    update_tab_visibility(hwnd, 3);
+                }
+                ID_TAB_ABOUT => {
+                    CURRENT_TAB.store(4, Ordering::Relaxed);
+                    update_tab_visibility(hwnd, 4);
+                }
 
                 ID_BTN_SAVE => {
                     if let Err(e) = state.config_mgr.save(&state.config) {
@@ -392,6 +453,58 @@ unsafe extern "system" fn settings_wnd_proc(
                         initial_y: None,
                     });
                     state.status_text = format!("Added Kiko {}. Click Save to apply.", next_id);
+                }
+                ID_BTN_ADD_SHINOBI => {
+                    let next_id = (state.config.characters.len() + 1) as u64;
+                    state.config.characters.push(CharacterConfig {
+                        instance_id: next_id,
+                        pack_id: "shinobi".to_string(),
+                        display_name: format!("Shinobi {}", next_id),
+                        personality: PersonalityType::Energetic,
+                        scale: 0.65,
+                        initial_x: None,
+                        initial_y: None,
+                    });
+                    state.status_text = format!("Added Shinobi {}. Click Save to apply.", next_id);
+                }
+                ID_BTN_ADD_SAMURAI => {
+                    let next_id = (state.config.characters.len() + 1) as u64;
+                    state.config.characters.push(CharacterConfig {
+                        instance_id: next_id,
+                        pack_id: "samurai".to_string(),
+                        display_name: format!("Samurai {}", next_id),
+                        personality: PersonalityType::Calm,
+                        scale: 0.65,
+                        initial_x: None,
+                        initial_y: None,
+                    });
+                    state.status_text = format!("Added Samurai {}. Click Save to apply.", next_id);
+                }
+                ID_BTN_ADD_AOI => {
+                    let next_id = (state.config.characters.len() + 1) as u64;
+                    state.config.characters.push(CharacterConfig {
+                        instance_id: next_id,
+                        pack_id: "schoolgirl".to_string(),
+                        display_name: format!("Aoi {}", next_id),
+                        personality: PersonalityType::Playful,
+                        scale: 0.65,
+                        initial_x: None,
+                        initial_y: None,
+                    });
+                    state.status_text = format!("Added Aoi {}. Click Save to apply.", next_id);
+                }
+                ID_BTN_ADD_FIGHTER => {
+                    let next_id = (state.config.characters.len() + 1) as u64;
+                    state.config.characters.push(CharacterConfig {
+                        instance_id: next_id,
+                        pack_id: "fighter".to_string(),
+                        display_name: format!("Fighter {}", next_id),
+                        personality: PersonalityType::Energetic,
+                        scale: 0.65,
+                        initial_x: None,
+                        initial_y: None,
+                    });
+                    state.status_text = format!("Added Fighter {}. Click Save to apply.", next_id);
                 }
                 ID_BTN_REMOVE_LAST => {
                     if state.config.characters.len() > 1 {
@@ -717,4 +830,43 @@ unsafe extern "system" fn settings_wnd_proc(
 unsafe fn draw_str(hdc: HDC, x: i32, y: i32, text: &str) {
     let wide: Vec<u16> = text.encode_utf16().collect();
     let _ = TextOutW(hdc, x, y, &wide);
+}
+
+unsafe fn update_tab_visibility(hwnd: HWND, tab: usize) {
+    let char_btns = [
+        ID_BTN_ADD_MOCHI,
+        ID_BTN_ADD_KIKO,
+        ID_BTN_ADD_SHINOBI,
+        ID_BTN_ADD_SAMURAI,
+        ID_BTN_ADD_AOI,
+        ID_BTN_ADD_FIGHTER,
+        ID_BTN_REMOVE_LAST,
+    ];
+    let perf_btns = [
+        ID_BTN_PERF_ECO,
+        ID_BTN_PERF_BALANCED,
+        ID_BTN_PERF_SMOOTH,
+        ID_BTN_PERF_GAMING,
+    ];
+    let desktop_btns = [
+        ID_BTN_TOGGLE_AUTOSTART,
+        ID_BTN_TOGGLE_FULLSCREEN,
+        ID_BTN_TOGGLE_CLICKTHROUGH,
+    ];
+
+    for &id in &char_btns {
+        if let Ok(hctl) = GetDlgItem(hwnd, id as i32) {
+            let _ = ShowWindow(hctl, if tab == 1 { SW_SHOW } else { SW_HIDE });
+        }
+    }
+    for &id in &perf_btns {
+        if let Ok(hctl) = GetDlgItem(hwnd, id as i32) {
+            let _ = ShowWindow(hctl, if tab == 2 { SW_SHOW } else { SW_HIDE });
+        }
+    }
+    for &id in &desktop_btns {
+        if let Ok(hctl) = GetDlgItem(hwnd, id as i32) {
+            let _ = ShowWindow(hctl, if tab == 3 { SW_SHOW } else { SW_HIDE });
+        }
+    }
 }

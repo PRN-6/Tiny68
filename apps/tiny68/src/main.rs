@@ -71,17 +71,56 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     // 5. Initialize texture manager and embed original character packs
     let mut textures = TextureManager::new();
+    let mut manifests: std::collections::HashMap<String, CharacterManifest> =
+        std::collections::HashMap::new();
+
     let mochi_manifest = create_default_mochi_manifest();
     let mochi_atlas = create_default_mochi_atlas();
     textures.insert("mochi", mochi_atlas);
+    manifests.insert("mochi".to_string(), mochi_manifest.clone());
 
     let kiko_manifest = create_default_kiko_manifest();
     let kiko_atlas = create_default_kiko_atlas();
     textures.insert("kiko", kiko_atlas);
+    manifests.insert("kiko".to_string(), kiko_manifest.clone());
+
+    // Scan assets/characters directory for installed character packs on disk
+    let pack_roots = [
+        std::path::PathBuf::from("assets/characters"),
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.join("assets/characters")))
+            .unwrap_or_else(|| std::path::PathBuf::from("assets/characters")),
+    ];
+
+    for root in &pack_roots {
+        if let Ok(entries) = std::fs::read_dir(root) {
+            for entry in entries.flatten() {
+                let pack_dir = entry.path();
+                if pack_dir.is_dir() {
+                    let manifest_path = pack_dir.join("manifest.json");
+                    if let Ok(content) = std::fs::read_to_string(&manifest_path) {
+                        if let Ok(manifest) = serde_json::from_str::<CharacterManifest>(&content) {
+                            let atlas_path = pack_dir.join(&manifest.atlas_file);
+                            if let Ok(atlas) = LoadedAtlas::from_file(&atlas_path) {
+                                tracing::info!(
+                                    "Loaded character pack from disk: {} ({})",
+                                    manifest.display_name,
+                                    manifest.id
+                                );
+                                textures.insert(&manifest.id, atlas);
+                                manifests.insert(manifest.id.clone(), manifest);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // 6. Runtime characters state
     let mut characters = Vec::new();
-    let spawn_y = (work_area.y + work_area.height - 60.0).max(100.0);
+    let spawn_y = (work_area.y + work_area.height - 100.0).max(100.0);
     let mut spawn_x = 100.0;
 
     for char_cfg in &config.characters {
@@ -89,26 +128,32 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let y = char_cfg.initial_y.unwrap_or(spawn_y);
         spawn_x += 80.0;
 
+        let (sw, sh) = manifests
+            .get(&char_cfg.pack_id)
+            .map(|m| (m.sprite_width as f32, m.sprite_height as f32))
+            .unwrap_or((48.0, 48.0));
+
         characters.push(RuntimeCharacter {
             _id: char_cfg.instance_id,
             display_name: char_cfg.display_name.clone(),
             pack_id: char_cfg.pack_id.clone(),
-            physics: PhysicsBody::new(x, y, 48.0 * char_cfg.scale, 48.0 * char_cfg.scale),
+            physics: PhysicsBody::new(x, y, sw * char_cfg.scale, sh * char_cfg.scale),
             fsm: CharacterStateMachine::new(),
             anim: AnimationPlayer::new("idle"),
             personality: PersonalityProfile::from_type(char_cfg.personality),
-            scale: char_cfg.scale.clamp(0.5, 3.0),
+            scale: char_cfg.scale.clamp(0.4, 3.0),
             is_following_cursor: false,
             social_cooldown: 0.0,
         });
     }
 
     if characters.is_empty() {
+        // Spawn default friendly companions: Mochi and Shinobi!
         characters.push(RuntimeCharacter {
             _id: 1,
             display_name: "Mochi".to_string(),
             pack_id: "mochi".to_string(),
-            physics: PhysicsBody::new(200.0, spawn_y, 48.0, 48.0),
+            physics: PhysicsBody::new(200.0, spawn_y + 30.0, 48.0, 48.0),
             fsm: CharacterStateMachine::new(),
             anim: AnimationPlayer::new("idle"),
             personality: PersonalityProfile::from_type(PersonalityType::Playful),
@@ -116,6 +161,21 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             is_following_cursor: false,
             social_cooldown: 0.0,
         });
+
+        if manifests.contains_key("shinobi") {
+            characters.push(RuntimeCharacter {
+                _id: 2,
+                display_name: "Shinobi".to_string(),
+                pack_id: "shinobi".to_string(),
+                physics: PhysicsBody::new(320.0, spawn_y, 128.0 * 0.65, 128.0 * 0.65),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Energetic),
+                scale: 0.65,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+        }
     }
 
     // Shared state for hit testing
@@ -289,8 +349,14 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                                     CharacterMenuAction::ChangeScale(s) => {
                                         let c = &mut characters[idx];
                                         c.scale = s;
-                                        c.physics.width = 48.0 * s;
-                                        c.physics.height = 48.0 * s;
+                                        let base_dim =
+                                            if c.pack_id == "mochi" || c.pack_id == "kiko" {
+                                                48.0
+                                            } else {
+                                                128.0
+                                            };
+                                        c.physics.width = base_dim * s;
+                                        c.physics.height = base_dim * s;
                                         config_dirty = true;
                                     }
                                     CharacterMenuAction::ResetPosition => {
@@ -459,11 +525,7 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 c.physics.integrate(dt, &cached_surfaces, &screen_bounds);
 
                 // Update animation frames
-                let manifest = if c.pack_id == "kiko" {
-                    &kiko_manifest
-                } else {
-                    &mochi_manifest
-                };
+                let manifest = manifests.get(&c.pack_id).unwrap_or(&mochi_manifest);
                 c.anim.update(dt, manifest);
             }
 
@@ -480,11 +542,7 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             compositor.dirty_rects.clear();
 
             for c in &characters {
-                let manifest = if c.pack_id == "kiko" {
-                    &kiko_manifest
-                } else {
-                    &mochi_manifest
-                };
+                let manifest = manifests.get(&c.pack_id).unwrap_or(&mochi_manifest);
                 compositor.draw_character(
                     &mut pixel_buffer,
                     manifest,
@@ -719,6 +777,90 @@ fn handle_tray_event(
                 anim: AnimationPlayer::new("idle"),
                 personality: PersonalityProfile::from_type(PersonalityType::Curious),
                 scale: 1.0,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+            *config_dirty = true;
+        }
+        TrayEvent::AddShinobi => {
+            let next_id = (characters.len() + 1) as u64;
+            characters.push(RuntimeCharacter {
+                _id: next_id,
+                display_name: format!("Shinobi {}", next_id),
+                pack_id: "shinobi".to_string(),
+                physics: PhysicsBody::new(
+                    150.0 + (next_id as f32 * 40.0),
+                    work_area.y + work_area.height - 90.0,
+                    128.0 * 0.65,
+                    128.0 * 0.65,
+                ),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Energetic),
+                scale: 0.65,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+            *config_dirty = true;
+        }
+        TrayEvent::AddSamurai => {
+            let next_id = (characters.len() + 1) as u64;
+            characters.push(RuntimeCharacter {
+                _id: next_id,
+                display_name: format!("Samurai {}", next_id),
+                pack_id: "samurai".to_string(),
+                physics: PhysicsBody::new(
+                    150.0 + (next_id as f32 * 40.0),
+                    work_area.y + work_area.height - 90.0,
+                    128.0 * 0.65,
+                    128.0 * 0.65,
+                ),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Calm),
+                scale: 0.65,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+            *config_dirty = true;
+        }
+        TrayEvent::AddSchoolgirl => {
+            let next_id = (characters.len() + 1) as u64;
+            characters.push(RuntimeCharacter {
+                _id: next_id,
+                display_name: format!("Aoi {}", next_id),
+                pack_id: "schoolgirl".to_string(),
+                physics: PhysicsBody::new(
+                    150.0 + (next_id as f32 * 40.0),
+                    work_area.y + work_area.height - 90.0,
+                    128.0 * 0.65,
+                    128.0 * 0.65,
+                ),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Playful),
+                scale: 0.65,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+            *config_dirty = true;
+        }
+        TrayEvent::AddFighter => {
+            let next_id = (characters.len() + 1) as u64;
+            characters.push(RuntimeCharacter {
+                _id: next_id,
+                display_name: format!("Fighter {}", next_id),
+                pack_id: "fighter".to_string(),
+                physics: PhysicsBody::new(
+                    150.0 + (next_id as f32 * 40.0),
+                    work_area.y + work_area.height - 90.0,
+                    128.0 * 0.65,
+                    128.0 * 0.65,
+                ),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Energetic),
+                scale: 0.65,
                 is_following_cursor: false,
                 social_cooldown: 0.0,
             });

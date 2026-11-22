@@ -355,6 +355,7 @@ dependencies = [
 name = "tiny68"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "tiny68-animation",
  "tiny68-assets",
  "tiny68-behavior",
