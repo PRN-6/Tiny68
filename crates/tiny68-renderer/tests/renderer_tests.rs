@@ -41,7 +41,10 @@ fn test_hud_rendering() {
 
     // Verify non-zero pixels exist where HUD was rendered
     let hud_sample_px = dest.pixels[10 * 300 + 10];
-    assert_ne!(hud_sample_px, 0, "HUD background or accent should be painted");
+    assert_ne!(
+        hud_sample_px, 0,
+        "HUD background or accent should be painted"
+    );
 }
 
 #[test]
