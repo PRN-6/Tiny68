@@ -1,0 +1,15 @@
+[package]
+name = "tiny68-testing"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+tiny68-core = { workspace = true }
+tiny68-animation = { workspace = true }
+tiny68-physics = { workspace = true }
+tiny68-behavior = { workspace = true }
+tiny68-assets = { workspace = true }
+tiny68-config = { workspace = true }
+

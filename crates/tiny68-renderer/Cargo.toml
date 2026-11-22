@@ -1,0 +1,16 @@
+[package]
+name = "tiny68-renderer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+windows = { workspace = true }
+image = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+tiny68-core = { workspace = true }
+tiny68-assets = { workspace = true }
+tiny68-animation = { workspace = true }
+

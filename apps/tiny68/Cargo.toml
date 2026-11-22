@@ -1,0 +1,21 @@
+[package]
+name = "tiny68"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+windows = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tiny68-core = { workspace = true }
+tiny68-diagnostics = { workspace = true }
+tiny68-config = { workspace = true }
+tiny68-assets = { workspace = true }
+tiny68-animation = { workspace = true }
+tiny68-physics = { workspace = true }
+tiny68-behavior = { workspace = true }
+tiny68-platform = { workspace = true }
+tiny68-renderer = { workspace = true }
+tiny68-overlay = { workspace = true }

@@ -1,0 +1,64 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps/tiny68",
+    "apps/tiny68-settings",
+    "crates/tiny68-core",
+    "crates/tiny68-platform",
+    "crates/tiny68-overlay",
+    "crates/tiny68-renderer",
+    "crates/tiny68-animation",
+    "crates/tiny68-behavior",
+    "crates/tiny68-physics",
+    "crates/tiny68-assets",
+    "crates/tiny68-config",
+    "crates/tiny68-diagnostics",
+    "crates/tiny68-testing",
+    "benchmarks",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Tiny68 Team"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/tiny68/tiny68"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+thiserror = "2.0"
+image = { version = "0.25", default-features = false, features = ["png"] }
+tiny68-core = { path = "crates/tiny68-core" }
+tiny68-platform = { path = "crates/tiny68-platform" }
+tiny68-overlay = { path = "crates/tiny68-overlay" }
+tiny68-renderer = { path = "crates/tiny68-renderer" }
+tiny68-animation = { path = "crates/tiny68-animation" }
+tiny68-behavior = { path = "crates/tiny68-behavior" }
+tiny68-physics = { path = "crates/tiny68-physics" }
+tiny68-assets = { path = "crates/tiny68-assets" }
+tiny68-config = { path = "crates/tiny68-config" }
+tiny68-diagnostics = { path = "crates/tiny68-diagnostics" }
+tiny68-testing = { path = "crates/tiny68-testing" }
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
+    "Win32_UI_Shell",
+    "Win32_UI_HiDpi",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_Graphics_Dwm",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Direct2D",
+    "Win32_Graphics_Direct2D_Common",
+    "Win32_Security",
+    "Win32_System_ProcessStatus",
+    "Win32_System_SystemInformation",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Accessibility",
+    "Win32_System_Registry",
+] }

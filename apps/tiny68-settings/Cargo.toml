@@ -1,0 +1,17 @@
+[package]
+name = "tiny68-settings"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+windows = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tiny68-core = { workspace = true }
+tiny68-config = { workspace = true }
+tiny68-platform = { workspace = true }
+tiny68-assets = { workspace = true }
+tiny68-diagnostics = { workspace = true }
+

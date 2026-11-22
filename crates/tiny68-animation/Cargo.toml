@@ -1,0 +1,14 @@
+[package]
+name = "tiny68-animation"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tiny68-core = { workspace = true }
+tiny68-assets = { workspace = true }
+

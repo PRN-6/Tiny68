@@ -1,0 +1,12 @@
+[package]
+name = "tiny68-physics"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+tracing = { workspace = true }
+tiny68-core = { workspace = true }
+

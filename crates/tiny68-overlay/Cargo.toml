@@ -1,0 +1,16 @@
+[package]
+name = "tiny68-overlay"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+windows = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+tiny68-core = { workspace = true }
+tiny68-platform = { workspace = true }
+tiny68-renderer = { workspace = true }
+tiny68-physics = { workspace = true }
+

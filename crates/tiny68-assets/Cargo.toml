@@ -1,0 +1,18 @@
+[package]
+name = "tiny68-assets"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "generate_packs"
+path = "src/bin/generate_packs.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+image = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tiny68-core = { workspace = true }

@@ -1,0 +1,22 @@
+[package]
+name = "tiny68-benchmarks"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "benchmark_runner"
+path = "src/main.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tiny68-core = { workspace = true }
+tiny68-animation = { workspace = true }
+tiny68-physics = { workspace = true }
+tiny68-behavior = { workspace = true }
+tiny68-assets = { workspace = true }
+tiny68-renderer = { workspace = true }
+tiny68-diagnostics = { workspace = true }
+

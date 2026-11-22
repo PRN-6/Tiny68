@@ -1,0 +1,13 @@
+[package]
+name = "tiny68-platform"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+windows = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+tiny68-core = { workspace = true }
+

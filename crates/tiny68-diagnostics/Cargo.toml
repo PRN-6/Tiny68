@@ -1,0 +1,12 @@
+[package]
+name = "tiny68-diagnostics"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tiny68-core = { workspace = true }
+
