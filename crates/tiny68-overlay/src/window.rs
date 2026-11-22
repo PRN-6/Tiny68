@@ -24,6 +24,12 @@ pub enum WindowEvent {
         character_index: Option<usize>,
         pt: Point,
     },
+    TrayRightClick {
+        pt: Point,
+    },
+    TrayLeftClick {
+        pt: Point,
+    },
     DisplayChanged,
     DpiChanged(u32),
     ExplorerRestarted,
@@ -349,6 +355,23 @@ unsafe extern "system" fn overlay_wnd_proc(
         }
         WM_CLOSE => {
             let _ = state.event_sender.send(WindowEvent::CloseRequested);
+            LRESULT(0)
+        }
+        crate::tray::WM_TRAY_CALLBACK => {
+            let evt = (lparam.0 & 0xFFFF) as u32;
+            if evt == WM_RBUTTONUP || evt == WM_CONTEXTMENU {
+                let mut pt = POINT::default();
+                let _ = GetCursorPos(&mut pt);
+                let _ = state.event_sender.send(WindowEvent::TrayRightClick {
+                    pt: Point::new(pt.x as f32, pt.y as f32),
+                });
+            } else if evt == WM_LBUTTONUP {
+                let mut pt = POINT::default();
+                let _ = GetCursorPos(&mut pt);
+                let _ = state.event_sender.send(WindowEvent::TrayLeftClick {
+                    pt: Point::new(pt.x as f32, pt.y as f32),
+                });
+            }
             LRESULT(0)
         }
         _ => DefWindowProcW(hwnd, msg, wparam, lparam),

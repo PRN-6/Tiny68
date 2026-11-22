@@ -148,7 +148,7 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     }
 
     if characters.is_empty() {
-        // Spawn default friendly companions: Mochi and Shinobi!
+        // Spawn default friendly companions: Mochi, Shinobi, and Samurai!
         characters.push(RuntimeCharacter {
             _id: 1,
             display_name: "Mochi".to_string(),
@@ -171,6 +171,50 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 fsm: CharacterStateMachine::new(),
                 anim: AnimationPlayer::new("idle"),
                 personality: PersonalityProfile::from_type(PersonalityType::Energetic),
+                scale: 0.65,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+        }
+        if manifests.contains_key("samurai") {
+            characters.push(RuntimeCharacter {
+                _id: 3,
+                display_name: "Samurai".to_string(),
+                pack_id: "samurai".to_string(),
+                physics: PhysicsBody::new(440.0, spawn_y, 128.0 * 0.65, 128.0 * 0.65),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Calm),
+                scale: 0.65,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+        }
+    } else if characters.len() == 1 && characters[0].pack_id == "mochi" {
+        // If config only has Mochi from an earlier run, automatically introduce the new companions!
+        if manifests.contains_key("shinobi") {
+            characters.push(RuntimeCharacter {
+                _id: 2,
+                display_name: "Shinobi".to_string(),
+                pack_id: "shinobi".to_string(),
+                physics: PhysicsBody::new(320.0, spawn_y, 128.0 * 0.65, 128.0 * 0.65),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Energetic),
+                scale: 0.65,
+                is_following_cursor: false,
+                social_cooldown: 0.0,
+            });
+        }
+        if manifests.contains_key("samurai") {
+            characters.push(RuntimeCharacter {
+                _id: 3,
+                display_name: "Samurai".to_string(),
+                pack_id: "samurai".to_string(),
+                physics: PhysicsBody::new(440.0, spawn_y, 128.0 * 0.65, 128.0 * 0.65),
+                fsm: CharacterStateMachine::new(),
+                anim: AnimationPlayer::new("idle"),
+                personality: PersonalityProfile::from_type(PersonalityType::Calm),
                 scale: 0.65,
                 is_following_cursor: false,
                 social_cooldown: 0.0,
@@ -219,6 +263,11 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let mut show_diagnostics = false;
     let mut config_dirty = false;
     let mut last_config_save = Instant::now();
+    let config_path = config_mgr.config_path().to_path_buf();
+    let mut last_config_mtime = std::fs::metadata(&config_path)
+        .and_then(|m| m.modified())
+        .ok();
+    let mut config_check_timer = Instant::now();
 
     let mut dragged_idx: Option<usize> = None;
     let mut drag_offset = Vec2::ZERO;
@@ -395,6 +444,26 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                         );
                     }
                 }
+                WindowEvent::TrayRightClick { pt } | WindowEvent::TrayLeftClick { pt } => {
+                    if let Some(tray_evt) = tray.show_context_menu(
+                        pt.x as i32,
+                        pt.y as i32,
+                        sim_state == SimulationState::Paused,
+                        sim_state == SimulationState::Hidden,
+                        show_diagnostics,
+                    ) {
+                        handle_tray_event(
+                            tray_evt,
+                            &mut sim_state,
+                            &mut perf_profile,
+                            &mut characters,
+                            &work_area,
+                            &mut show_diagnostics,
+                            &mut config_dirty,
+                            &mut running,
+                        );
+                    }
+                }
                 WindowEvent::DisplayChanged | WindowEvent::DpiChanged(_) => {
                     let new_bounds = get_virtual_screen_bounds();
                     overlay.resize(new_bounds);
@@ -521,14 +590,23 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                // Physics step
-                c.physics.integrate(dt, &cached_surfaces, &screen_bounds);
+                // Physics step (using work area bottom as floor so characters walk atop taskbar)
+                let floor_bounds = Rect::new(
+                    screen_bounds.x,
+                    screen_bounds.y,
+                    screen_bounds.width,
+                    (work_area.y + work_area.height).min(screen_bounds.height),
+                );
+                c.physics.integrate(dt, &cached_surfaces, &floor_bounds);
 
                 // Update animation frames
                 let manifest = manifests.get(&c.pack_id).unwrap_or(&mochi_manifest);
                 c.anim.update(dt, manifest);
             }
+        }
 
+        // Render characters whenever visible (even when simulation paused)
+        if effective_state != SimulationState::Hidden {
             // Sync bounding boxes for hit testing
             if let Ok(mut boxes) = character_boxes.write() {
                 boxes.clear();
@@ -599,6 +677,60 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 pixel_buffer.width,
                 pixel_buffer.height,
             );
+        }
+
+        // Periodic check for external configuration updates (e.g. from Settings GUI)
+        if config_check_timer.elapsed() > Duration::from_millis(500) {
+            config_check_timer = Instant::now();
+            if let Ok(meta) = std::fs::metadata(&config_path) {
+                if let Ok(mtime) = meta.modified() {
+                    if Some(mtime) != last_config_mtime {
+                        last_config_mtime = Some(mtime);
+                        let fresh_cfg = config_mgr.load();
+                        perf_profile = fresh_cfg.performance_profile;
+
+                        let existing_ids: std::collections::HashSet<u64> =
+                            characters.iter().map(|c| c._id).collect();
+
+                        for c_cfg in &fresh_cfg.characters {
+                            if !existing_ids.contains(&c_cfg.instance_id) {
+                                let (sw, sh) = manifests
+                                    .get(&c_cfg.pack_id)
+                                    .map(|m| (m.sprite_width as f32, m.sprite_height as f32))
+                                    .unwrap_or((48.0, 48.0));
+                                let base_scale = if c_cfg.scale > 0.0 { c_cfg.scale } else { 0.65 };
+                                characters.push(RuntimeCharacter {
+                                    _id: c_cfg.instance_id,
+                                    display_name: c_cfg.display_name.clone(),
+                                    pack_id: c_cfg.pack_id.clone(),
+                                    physics: PhysicsBody::new(
+                                        c_cfg
+                                            .initial_x
+                                            .unwrap_or(150.0 + (c_cfg.instance_id as f32 * 50.0)),
+                                        c_cfg
+                                            .initial_y
+                                            .unwrap_or(work_area.y + work_area.height - 100.0),
+                                        sw * base_scale,
+                                        sh * base_scale,
+                                    ),
+                                    fsm: CharacterStateMachine::new(),
+                                    anim: AnimationPlayer::new("idle"),
+                                    personality: PersonalityProfile::from_type(c_cfg.personality),
+                                    scale: base_scale,
+                                    is_following_cursor: false,
+                                    social_cooldown: 0.0,
+                                });
+                            }
+                        }
+
+                        let fresh_ids: std::collections::HashSet<u64> =
+                            fresh_cfg.characters.iter().map(|c| c.instance_id).collect();
+                        if !fresh_ids.is_empty() {
+                            characters.retain(|c| fresh_ids.contains(&c._id));
+                        }
+                    }
+                }
+            }
         }
 
         // Measure frame timing for diagnostics

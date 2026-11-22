@@ -37,15 +37,35 @@ impl Default for AppConfig {
             auto_start_with_windows: false,
             start_minimized: false,
             pause_on_fullscreen_game: true,
-            characters: vec![CharacterConfig {
-                instance_id: 1,
-                pack_id: "mochi".to_string(),
-                display_name: "Mochi".to_string(),
-                personality: PersonalityType::Playful,
-                scale: 1.0,
-                initial_x: None,
-                initial_y: None,
-            }],
+            characters: vec![
+                CharacterConfig {
+                    instance_id: 1,
+                    pack_id: "mochi".to_string(),
+                    display_name: "Mochi".to_string(),
+                    personality: PersonalityType::Playful,
+                    scale: 1.0,
+                    initial_x: None,
+                    initial_y: None,
+                },
+                CharacterConfig {
+                    instance_id: 2,
+                    pack_id: "shinobi".to_string(),
+                    display_name: "Shinobi".to_string(),
+                    personality: PersonalityType::Energetic,
+                    scale: 0.65,
+                    initial_x: None,
+                    initial_y: None,
+                },
+                CharacterConfig {
+                    instance_id: 3,
+                    pack_id: "samurai".to_string(),
+                    display_name: "Samurai".to_string(),
+                    personality: PersonalityType::Calm,
+                    scale: 0.65,
+                    initial_x: None,
+                    initial_y: None,
+                },
+            ],
             target_fps_override: None,
             click_through_enabled: true,
         }
@@ -66,6 +86,10 @@ impl ConfigManager {
 
     pub fn with_path(path: PathBuf) -> Self {
         Self { config_path: path }
+    }
+
+    pub fn config_path(&self) -> &std::path::Path {
+        &self.config_path
     }
 
     pub fn load(&self) -> AppConfig {

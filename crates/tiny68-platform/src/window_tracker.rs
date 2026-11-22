@@ -51,8 +51,13 @@ pub fn is_foreground_fullscreen() -> bool {
         let w = rc.right - rc.left;
         let h = rc.bottom - rc.top;
 
-        // Covers entire primary screen and is at 0,0
+        // Covers entire primary screen and has no standard title bar / caption (true fullscreen game)
         if rc.left <= 0 && rc.top <= 0 && w >= scr_w && h >= scr_h {
+            let style = GetWindowLongPtrW(fg, GWL_STYLE) as u32;
+            if (style & WS_CAPTION.0) == WS_CAPTION.0 {
+                return false;
+            }
+
             // Check if it's the desktop or Shell_TrayWnd
             let mut class_name = [0u16; 64];
             let len = GetClassNameW(fg, &mut class_name);

@@ -3,7 +3,7 @@ use windows::Win32::Foundation::*;
 use windows::Win32::UI::Shell::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
-const WM_TRAY_CALLBACK: u32 = WM_APP + 68;
+pub const WM_TRAY_CALLBACK: u32 = WM_APP + 68;
 
 pub const ID_TRAY_SETTINGS: usize = 1001;
 pub const ID_TRAY_ADD_MOCHI: usize = 1002;
